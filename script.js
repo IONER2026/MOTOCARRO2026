@@ -29,14 +29,13 @@ let isSelectingRole = false;
 // Check if user is already logged in
 auth.onAuthStateChanged(user => {
     if (user) {
+        console.log("Usuario detectado:", user.uid);
         // If user is logged in, check their role in DB
         checkUserRole(user.uid);
+    } else {
+        console.log("No hay usuario activo.");
     }
 });
-
-if (roleSelection) {
-    // Only present on index.html
-}
 
 function selectRole(role) {
     isSelectingRole = true;
@@ -48,24 +47,37 @@ function selectRole(role) {
         authContainer.innerHTML = `
             <h2>Ingreso ${role === 'driver' ? 'Conductor' : 'Pasajero'}</h2>
             <p>Usa tu cuenta de Google para continuar</p>
+            <div id="login-status" style="margin: 1rem 0; color: #ffcc00; display: none;">Iniciando...</div>
             <button class="role-btn" onclick="loginWithGoogle()">
                 <span class="icon">G</span> Iniciar Sesión con Google
             </button>
-            <button class="role-btn" style="font-size: 0.9rem; opacity: 0.7; border:none;" style="background:none;" onclick="location.reload()">
+            <button class="role-btn" style="font-size: 0.9rem; opacity: 0.7; border:none; background:none;" onclick="location.reload()">
                 ← Volver
             </button>
         `;
     }
 }
 
+function showStatus(msg) {
+    const el = document.getElementById('login-status');
+    if (el) {
+        el.style.display = 'block';
+        el.innerText = msg;
+    }
+    console.log("STATUS:", msg);
+}
+
 function loginWithGoogle() {
+    showStatus("Abriendo ventana de autenticación...");
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider)
         .then((result) => {
+            showStatus("Autenticación exitosa. Guardando datos...");
             const user = result.user;
             saveUserRole(user);
         }).catch((error) => {
             console.error(error);
+            showStatus("Error: " + error.message);
             alert("Error al iniciar sesión: " + error.message);
         });
 }
@@ -73,12 +85,15 @@ function loginWithGoogle() {
 function saveUserRole(user) {
     const userRef = db.collection('users').doc(user.uid);
 
+    showStatus("Verificando registro en base de datos...");
     userRef.get().then((doc) => {
         if (doc.exists) {
+            showStatus("Usuario encontrado. Redirigiendo...");
             const data = doc.data();
             redirectUser(data.role, data.status, data.docs_submitted);
         } else {
             // New user, save role
+            showStatus("Registrando nuevo usuario...");
             // Drivers start as 'pending'. Passengers are approved.
             const initialStatus = selectedRole === 'driver' ? 'pending' : 'approved';
 
@@ -91,25 +106,49 @@ function saveUserRole(user) {
                 photoURL: user.photoURL,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
+                showStatus("Registro completado. Redirigiendo...");
                 redirectUser(selectedRole, initialStatus, false);
+            }).catch(err => {
+                console.error("Error writing to DB:", err);
+                showStatus("Error al guardar en base de datos: " + err.message);
+                alert("Error base de datos: " + err.message);
             });
         }
+    }).catch(err => {
+        console.error("Error reading DB:", err);
+        showStatus("Error de conexión: " + err.message);
+        alert("Error de conexión: " + err.message);
     });
 }
 
 function checkUserRole(uid) {
+    // showStatus may not exist if called from auto-login, so check safely
+    console.log("Verificando rol para:", uid);
     db.collection('users').doc(uid).get().then((doc) => {
         if (doc.exists) {
             const data = doc.data();
+            console.log("Datos obtenidos:", data);
             redirectUser(data.role, data.status, data.docs_submitted);
         } else {
-            // User authenticated but no DB record? Logout or handle error
-            console.log("User has no role in DB");
+            console.log("Usuario autenticado pero sin registro en DB");
+            // Could force logout here or ask to select role
+            if (selectedRole) {
+                // user is in the process of logging in, so we might be in the race condition of 'saveUserRole'
+                // do nothing, let saveUserRole handle it
+            } else {
+                // Orphaned auth user?
+                alert("Usuario detectado pero no registrado. Por favor selecciona tu rol.");
+                // Optionally: auth.signOut();
+            }
         }
+    }).catch(err => {
+        console.error("Error checkUserRole:", err);
+        alert("Error verificando usuario: " + err.message);
     });
 }
 
 function redirectUser(role, status, docsSubmitted) {
+    console.log("Redirigiendo a:", role, status);
     const p = window.location.pathname;
 
     // Normalize path just in case
@@ -117,7 +156,6 @@ function redirectUser(role, status, docsSubmitted) {
     const isRegisterPage = p.includes('driver_register.html');
     const isVerificationPage = p.includes('verification.html');
     const isPassengerPage = p.includes('passenger.html');
-    const isIndexPage = p.endsWith('/') || p.includes('index.html');
 
     if (role === 'driver') {
         if (status === 'approved') {
