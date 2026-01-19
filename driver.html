@@ -113,20 +113,54 @@
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUser = null;
 
         auth.onAuthStateChanged(user => {
             if (user) {
+                currentUser = user;
                 document.getElementById('user-name').innerText = user.displayName.split(' ')[0];
                 document.getElementById('user-photo').src = user.photoURL;
+
+                // Listen to driver status
+                db.collection('users').doc(user.uid).onSnapshot(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        updateStatusUI(data.isOnline);
+                    }
+                });
+
             } else {
                 window.location.href = 'index.html';
             }
         });
 
+        function updateStatusUI(isOnline) {
+            const toggle = document.getElementById('online-toggle');
+            const joyText = document.getElementById('status-text');
+
+            toggle.checked = !!isOnline;
+            joyText.innerText = isOnline ? "En Linea (Disponible)" : "Desconectado";
+            joyText.style.color = isOnline ? "var(--secondary-color)" : "white";
+        }
+
         function toggleOnline() {
+            if (!currentUser) return;
             const isOnline = document.getElementById('online-toggle').checked;
-            document.getElementById('status-text').innerText = isOnline ? "En Linea (Disponible)" : "Desconectado";
-            document.getElementById('status-text').style.color = isOnline ? "var(--secondary-color)" : "white";
+
+            // Optimistic UI update
+            updateStatusUI(isOnline);
+
+            db.collection('users').doc(currentUser.uid).update({
+                isOnline: isOnline,
+                lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(err => {
+                console.error("Error updating status:", err);
+                alert("Error al cambiar estado: " + err.message);
+                // Revert UI on error
+                updateStatusUI(!isOnline);
+            });
         }
 
         function logout() {

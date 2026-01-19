@@ -50,11 +50,15 @@
     <script>
         const ADMIN_PHONE = "51981353850"; // Replace with actual admin number if different
 
+        // Ensure instances are available
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
         async function submitViaWhatsApp(e) {
             e.preventDefault();
             const btn = document.getElementById('submit-btn');
             const status = document.getElementById('upload-status');
-            const user = firebase.auth().currentUser;
+            const user = auth.currentUser;
 
             if (!user) return;
 
