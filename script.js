@@ -16,8 +16,16 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Fix for "Client is offline" error
-db.settings({ experimentalForceLongPolling: true });
+// Attempt to force connection settings
+try {
+    db.settings({
+        experimentalForceLongPolling: true,
+        merge: true
+    });
+    console.log("Firestore settings applied.");
+} catch (e) {
+    console.warn("Could not apply firestore settings:", e);
+}
 
 // DOM Elements
 const roleSelection = document.getElementById('role-selection');
@@ -25,8 +33,6 @@ const authContainer = document.getElementById('auth-container');
 
 // State
 let selectedRole = null;
-
-// prevent auth state from triggering if we are just selecting a role
 let isSelectingRole = false;
 
 // Check if user is already logged in
@@ -46,7 +52,6 @@ function selectRole(role) {
     if (roleSelection) roleSelection.style.display = 'none';
     if (authContainer) {
         authContainer.classList.remove('hidden');
-        // Inject Login Form based on role
         authContainer.innerHTML = `
             <h2>Ingreso ${role === 'driver' ? 'Conductor' : 'Pasajero'}</h2>
             <p>Usa tu cuenta de Google para continuar</p>
@@ -61,17 +66,23 @@ function selectRole(role) {
     }
 }
 
-function showStatus(msg) {
+function showStatus(msg, isError = false) {
     const el = document.getElementById('login-status');
     if (el) {
         el.style.display = 'block';
         el.innerText = msg;
+        el.style.color = isError ? '#ff4444' : '#ffcc00';
     }
     console.log("STATUS:", msg);
 }
 
 function loginWithGoogle() {
-    showStatus("Abriendo ventana de autenticación...");
+    showStatus("Verificando conexión...");
+    if (!navigator.onLine) {
+        showStatus("Error: No tienes conexión a internet.", true);
+        return;
+    }
+
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider)
         .then((result) => {
@@ -80,74 +91,86 @@ function loginWithGoogle() {
             saveUserRole(user);
         }).catch((error) => {
             console.error(error);
-            showStatus("Error: " + error.message);
-            alert("Error al iniciar sesión: " + error.message);
+            showStatus("Error: " + error.message, true);
         });
+}
+
+// Helper to retry operations
+async function retryOperation(operation, maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            await db.enableNetwork(); // Force network enable before op
+            return await operation();
+        } catch (err) {
+            console.log(`Intento ${i + 1} fallido:`, err);
+            if (i === maxRetries - 1) throw err;
+            await new Promise(r => setTimeout(r, 1000)); // Wait 1s
+        }
+    }
 }
 
 function saveUserRole(user) {
     const userRef = db.collection('users').doc(user.uid);
 
-    showStatus("Verificando registro en base de datos...");
-    userRef.get().then((doc) => {
-        if (doc.exists) {
-            showStatus("Usuario encontrado. Redirigiendo...");
-            const data = doc.data();
-            redirectUser(data.role, data.status, data.docs_submitted);
-        } else {
-            // New user, save role
-            showStatus("Registrando nuevo usuario...");
-            // Drivers start as 'pending'. Passengers are approved.
-            const initialStatus = selectedRole === 'driver' ? 'pending' : 'approved';
+    showStatus("Conectando base de datos...", false);
 
-            userRef.set({
-                email: user.email,
-                displayName: user.displayName,
-                role: selectedRole,
-                status: initialStatus,
-                docs_submitted: false,
-                photoURL: user.photoURL,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                showStatus("Registro completado. Redirigiendo...");
-                redirectUser(selectedRole, initialStatus, false);
-            }).catch(err => {
-                console.error("Error writing to DB:", err);
-                showStatus("Error al guardar en base de datos: " + err.message);
-                alert("Error base de datos: " + err.message);
-            });
-        }
-    }).catch(err => {
-        console.error("Error reading DB:", err);
-        showStatus("Error de conexión: " + err.message);
-        alert("Error de conexión: " + err.message);
-    });
+    retryOperation(() => userRef.get())
+        .then((doc) => {
+            if (doc && doc.exists) {
+                showStatus("Usuario encontrado. Redirigiendo...", false);
+                const data = doc.data();
+                redirectUser(data.role, data.status, data.docs_submitted);
+            } else {
+                // New user, save role
+                showStatus("Registrando nuevo usuario...", false);
+                const initialStatus = selectedRole === 'driver' ? 'pending' : 'approved';
+
+                userRef.set({
+                    email: user.email,
+                    displayName: user.displayName,
+                    role: selectedRole,
+                    status: initialStatus,
+                    docs_submitted: false,
+                    photoURL: user.photoURL,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    showStatus("Registro completado. Redirigiendo...", false);
+                    redirectUser(selectedRole, initialStatus, false);
+                }).catch(err => {
+                    throw err; // Pass to helper catch
+                });
+            }
+        }).catch(err => {
+            console.error("Error DB:", err);
+            if (err.message.includes("offline")) {
+                showStatus("Error: El cliente está offline. Revisa tu conexión.", true);
+            } else {
+                showStatus("Error base de datos: " + err.message, true);
+            }
+        });
 }
 
 function checkUserRole(uid) {
-    // showStatus may not exist if called from auto-login, so check safely
     console.log("Verificando rol para:", uid);
-    db.collection('users').doc(uid).get().then((doc) => {
-        if (doc.exists) {
-            const data = doc.data();
-            console.log("Datos obtenidos:", data);
-            redirectUser(data.role, data.status, data.docs_submitted);
-        } else {
-            console.log("Usuario autenticado pero sin registro en DB");
-            // Could force logout here or ask to select role
-            if (selectedRole) {
-                // user is in the process of logging in, so we might be in the race condition of 'saveUserRole'
-                // do nothing, let saveUserRole handle it
+
+    retryOperation(() => db.collection('users').doc(uid).get())
+        .then((doc) => {
+            if (doc && doc.exists) {
+                const data = doc.data();
+                console.log("Datos obtenidos:", data);
+                redirectUser(data.role, data.status, data.docs_submitted);
             } else {
-                // Orphaned auth user?
-                alert("Usuario detectado pero no registrado. Por favor selecciona tu rol.");
-                // Optionally: auth.signOut();
+                console.log("Usuario autenticado pero sin registro en DB");
+                if (!isSelectingRole) {
+                    // Might be a returning user who got wiped or error
+                    // Do nothing, wait for them to click a role
+                }
             }
-        }
-    }).catch(err => {
-        console.error("Error checkUserRole:", err);
-        alert("Error verificando usuario: " + err.message);
-    });
+        }).catch(err => {
+            console.error("Error checkUserRole:", err);
+            // Don't alert here to avoid spamming if it's just a temporary glitch on load
+            console.log("Reintentando conexión...");
+        });
 }
 
 function redirectUser(role, status, docsSubmitted) {
