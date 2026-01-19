@@ -16,6 +16,9 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// Fix for "Client is offline" error
+db.settings({ experimentalForceLongPolling: true });
+
 // DOM Elements
 const roleSelection = document.getElementById('role-selection');
 const authContainer = document.getElementById('auth-container');
