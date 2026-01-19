@@ -47,7 +47,6 @@ function selectRole(role) {
         authContainer.innerHTML = `
             <h2>Ingreso ${role === 'driver' ? 'Conductor' : 'Pasajero'}</h2>
             <p>Usa tu cuenta de Google para continuar</p>
-            <div id="login-status" style="margin: 1rem 0; color: #ffcc00; display: none;">Iniciando...</div>
             <button class="role-btn" onclick="loginWithGoogle()">
                 <span class="icon">G</span> Iniciar Sesión con Google
             </button>
@@ -59,19 +58,14 @@ function selectRole(role) {
 }
 
 function showStatus(msg, isError = false) {
-    const el = document.getElementById('login-status');
-    if (el) {
-        el.style.display = 'block';
-        el.innerText = msg;
-        el.style.color = isError ? '#ff4444' : '#ffcc00';
-    }
+    // Clean UI: Only log to console
     console.log("STATUS:", msg);
 }
 
 function loginWithGoogle() {
     showStatus("Verificando conexión...");
     if (!navigator.onLine) {
-        showStatus("Error: No tienes conexión a internet.", true);
+        alert("Error: No tienes conexión a internet.");
         return;
     }
 
@@ -83,7 +77,7 @@ function loginWithGoogle() {
             saveUserRole(user);
         }).catch((error) => {
             console.error(error);
-            showStatus("Error: " + error.message, true);
+            alert("Error login: " + error.message);
         });
 }
 
@@ -135,9 +129,9 @@ function saveUserRole(user) {
         }).catch(err => {
             console.error("Error DB:", err);
             if (err.message.includes("offline")) {
-                showStatus("Error: El cliente está offline. Revisa tu conexión.", true);
+                alert("Error de conexión: El cliente está offline. Revisa tu internet.");
             } else {
-                showStatus("Error base de datos: " + err.message, true);
+                alert("Error base de datos: " + err.message);
             }
         });
 }
