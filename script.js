@@ -16,16 +16,8 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Attempt to force connection settings
-try {
-    db.settings({
-        experimentalForceLongPolling: true,
-        merge: true
-    });
-    console.log("Firestore settings applied.");
-} catch (e) {
-    console.warn("Could not apply firestore settings:", e);
-}
+// Simplify: Remove forced settings to see if default works better
+// db.settings({ ... });
 
 // DOM Elements
 const roleSelection = document.getElementById('role-selection');
