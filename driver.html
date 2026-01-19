@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conductor - Charapa Express</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--secondary-color);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(26px);
+        }
+
+        .status-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="app-container glass-panel">
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Conductor <span id="user-name">...</span></h3>
+                <img id="user-photo" src="" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%;">
+            </div>
+        </header>
+
+        <div class="status-container">
+            <div>
+                <span style="font-size: 0.8rem; opacity: 0.7;">ESTADO</span><br>
+                <strong id="status-text">Desconectado</strong>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="online-toggle" onchange="toggleOnline()">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <h4>Carreras Pendientes</h4>
+            <div style="padding: 2rem; text-align: center; color: #888; font-style: italic;">
+                Esperando solicitudes... 🛺
+            </div>
+        </div>
+
+        <button onclick="logout()"
+            style="margin-top: 2rem; background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
+            Cerrar Sesión
+        </button>
+    </main>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDkxUrxIx7MAWwls-NY0Lwwb6lc176fSuM",
+            authDomain: "motocarro2026-6d261.firebaseapp.com",
+            projectId: "motocarro2026-6d261",
+            storageBucket: "motocarro2026-6d261.firebasestorage.app",
+            messagingSenderId: "892971790055",
+            appId: "1:892971790055:web:708339c84105791b70fc42"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('user-name').innerText = user.displayName.split(' ')[0];
+                document.getElementById('user-photo').src = user.photoURL;
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        function toggleOnline() {
+            const isOnline = document.getElementById('online-toggle').checked;
+            document.getElementById('status-text').innerText = isOnline ? "En Linea (Disponible)" : "Desconectado";
+            document.getElementById('status-text').style.color = isOnline ? "var(--secondary-color)" : "white";
+        }
+
+        function logout() {
+            auth.signOut().then(() => {
+                window.location.href = 'index.html';
+            });
+        }
+    </script>
+</body>
+
+</html>

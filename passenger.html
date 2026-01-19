@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pasajero - Charapa Express</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        .map-placeholder {
+            width: 100%;
+            height: 300px;
+            background: #2a2a2a;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="app-container glass-panel">
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Hola, <span id="user-name">Pasajero</span></h3>
+                <img id="user-photo" src="" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%;">
+            </div>
+            <p class="subtitle">¿A dónde vamos hoy?</p>
+        </header>
+
+        <div class="map-placeholder">
+            <p>📍 Mapa cargando...</p>
+        </div>
+
+        <div class="input-group" style="margin-bottom: 1rem;">
+            <input type="text" placeholder="¿Destino?"
+                style="width: 100%; padding: 1rem; border-radius: 12px; border: none; background: rgba(255,255,255,0.1); color: white;">
+        </div>
+
+        <button class="role-btn passenger">
+            <span class="icon">🚀</span>
+            <span class="text">Pedir Motocarro</span>
+        </button>
+
+        <button onclick="logout()"
+            style="margin-top: 2rem; background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
+            Cerrar Sesión
+        </button>
+    </main>
+
+    <script>
+        // Config reuse would be ideal, but for MVP pasting keys here too or creating a shared config.js
+        const firebaseConfig = {
+            apiKey: "AIzaSyDkxUrxIx7MAWwls-NY0Lwwb6lc176fSuM",
+            authDomain: "motocarro2026-6d261.firebaseapp.com",
+            projectId: "motocarro2026-6d261",
+            storageBucket: "motocarro2026-6d261.firebasestorage.app",
+            messagingSenderId: "892971790055",
+            appId: "1:892971790055:web:708339c84105791b70fc42"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('user-name').innerText = user.displayName.split(' ')[0];
+                document.getElementById('user-photo').src = user.photoURL;
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        function logout() {
+            auth.signOut().then(() => {
+                window.location.href = 'index.html';
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación - Charapa Express</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+</head>
+
+<body>
+    <main class="app-container glass-panel">
+        <header>
+            <h1>⏳ En Revisión</h1>
+            <p class="subtitle">Solo falta un paso</p>
+        </header>
+
+        <div style="margin: 2rem 0; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
+            <p>Hola <strong id="user-name">Conductor</strong>,</p>
+            <p style="margin-top: 1rem; opacity: 0.8;">
+                Tu cuenta de conductor ha sido creada, pero requiere <strong>aprobación manual</strong> por seguridad.
+            </p>
+            <p style="margin-top: 1rem; opacity: 0.8;">
+                Por favor, acércate a la oficina o envía tus documentos (Licencia/Soat) al administrador.
+            </p>
+        </div>
+
+        <button onclick="checkStatus()" class="role-btn passenger" style="margin-bottom: 1rem;">
+            🔄 Verificar Estado Ahora
+        </button>
+
+        <button onclick="logout()"
+            style="background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
+            Cerrar Sesión
+        </button>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        // Override or extend script.js logic if needed, but script.js handles the redirect check
+        function checkStatus() {
+            location.reload();
+        }
+
+        function logout() {
+            firebase.auth().signOut().then(() => {
+                window.location.href = 'index.html';
+            });
+        }
+
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('user-name').innerText = user.displayName;
+            }
+        });
+    </script>
+</body>
+
+</html>
