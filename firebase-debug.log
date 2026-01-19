@@ -1,0 +1,20 @@
+[debug] [2026-01-19T01:43:15.518Z] ----------------------------------------------------------------------
+[debug] [2026-01-19T01:43:15.536Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\DERVIS ZEVALLOS\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js apps:sdkconfig web
+[debug] [2026-01-19T01:43:15.539Z] CLI Version:   15.3.1
+[debug] [2026-01-19T01:43:15.539Z] Platform:      win32
+[debug] [2026-01-19T01:43:15.540Z] Node Version:  v24.11.1
+[debug] [2026-01-19T01:43:15.541Z] Time:          Sun Jan 18 2026 20:43:15 GMT-0500 (hora estándar de Perú)
+[debug] [2026-01-19T01:43:15.542Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-01-19T01:43:16.556Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-19T01:43:16.557Z] > authorizing via signed-in user (ieegenaroherreracontamana@gmail.com)
+[debug] [2026-01-19T01:43:16.563Z] Checked if tokens are valid: false, expires at: 1768787443255
+[debug] [2026-01-19T01:43:16.564Z] Checked if tokens are valid: false, expires at: 1768787443255
+[debug] [2026-01-19T01:43:16.565Z] > refreshing access token with scopes: []
+[debug] [2026-01-19T01:43:16.575Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-19T01:43:16.576Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-19T01:43:17.386Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-01-19T01:43:17.387Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-19T01:43:17.414Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/motocarro2026-6d261/webApps pageSize=100
+[debug] [2026-01-19T01:43:18.146Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/motocarro2026-6d261/webApps 200
+[debug] [2026-01-19T01:43:18.146Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/motocarro2026-6d261/webApps {"apps":[{"name":"projects/motocarro2026-6d261/webApps/1:892971790055:web:708339c84105791b70fc42","appId":"1:892971790055:web:708339c84105791b70fc42","displayName":"MOTOCARRO2026","projectId":"motocarro2026-6d261","webId":"NTAxNjAxMGUtODljZS00ZjMyLWI1N2UtNmE3MDJlODVjZTcz","apiKeyId":"9a175ff9-9f94-467a-8c44-d22270e48108","state":"ACTIVE","expireTime":"1970-01-01T00:00:00Z","etag":"1_9978f4d0-3e3e-4f75-9fe8-573628491184"},{"name":"projects/motocarro2026-6d261/webApps/1:892971790055:web:ad0312c8875d378b70fc42","appId":"1:892971790055:web:ad0312c8875d378b70fc42","displayName":"MOTOCARRO2026","projectId":"motocarro2026-6d261","webId":"MDdhZDY5MWQtZmMxNC00ZTViLWE2NzAtNWJkMWFmZmZiZThj","apiKeyId":"9a175ff9-9f94-467a-8c44-d22270e48108","state":"ACTIVE","expireTime":"1970-01-01T00:00:00Z","etag":"1_fa305298-8093-4096-8a9b-e30afeace8cb"}]}

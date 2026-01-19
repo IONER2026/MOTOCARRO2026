@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Conductor - Charapa Express</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+    <main class="app-container glass-panel">
+        <header>
+            <h1>📄 Documentación</h1>
+            <p class="subtitle">Envío por WhatsApp</p>
+        </header>
+
+        <form id="driver-form" onsubmit="submitViaWhatsApp(event)">
+            <input type="text" id="dni-number" placeholder="Número de DNI" required>
+            <input type="tel" id="phone-number" placeholder="Tu Celular" required>
+
+            <div class="upload-container">
+                <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 1rem;">
+                    Para agilizar el proceso y evitar costos, el envío de documentos se hará directamente al
+                    <strong>WhatsApp del Administrador</strong>.
+                </p>
+                <ul style="text-align: left; opacity: 0.8; font-size: 0.9rem; margin-bottom: 1rem;">
+                    <li>1. Foto de Perfil (Selfie)</li>
+                    <li>2. Foto de DNI (Frente/Reverso)</li>
+                    <li>3. Foto del Motocarro</li>
+                </ul>
+            </div>
+
+            <button type="submit" class="role-btn driver" id="submit-btn"
+                style="background: #25D366; border-color: #25D366;">
+                <span class="icon">📲</span>
+                <span class="text">Enviar Fotos por WhatsApp</span>
+            </button>
+        </form>
+
+        <p id="upload-status" style="margin-top: 1rem; font-size: 0.8rem; opacity: 0.7;"></p>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        const ADMIN_PHONE = "51981353850"; // Replace with actual admin number if different
+
+        async function submitViaWhatsApp(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const status = document.getElementById('upload-status');
+            const user = firebase.auth().currentUser;
+
+            if (!user) return;
+
+            const dni = document.getElementById('dni-number').value;
+            const phone = document.getElementById('phone-number').value;
+            const name = user.displayName;
+
+            btn.disabled = true;
+            status.innerText = "Registrando datos...";
+
+            try {
+                // 1. Update Firestore (Mark as submitted pending verification)
+                await db.collection('users').doc(user.uid).update({
+                    dni: dni,
+                    phone: phone,
+                    docs_submitted: true, // We trust they will send it
+                    status: 'pending',
+                    submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // 2. Open WhatsApp
+                const message = `👋 Hola Admin, soy conductor nuevo.\n\n👤 *Nombre*: ${name}\n🆔 *DNI*: ${dni}\n📱 *Cel*: ${phone}\n\nAdjunto mis 3 fotos (Perfil, DNI, Moto) para validación.`;
+                const whatsappUrl = `https://wa.me/${ADMIN_PHONE}?text=${encodeURIComponent(message)}`;
+
+                window.open(whatsappUrl, '_blank');
+
+                // 3. Redirect to Verification Page
+                window.location.href = 'verification.html';
+
+            } catch (error) {
+                console.error(error);
+                status.innerText = "Error al guardar datos: " + error.message;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+
+</html>
