@@ -77,7 +77,8 @@
             }
         });
 
-        let map, marker;
+        let map, userMarker, destMarker, routeLine;
+        let userPos = null;
 
         function initMap() {
             // Default to a central location (e.g., Peru/City center) or wait for geo
@@ -87,19 +88,22 @@
                     (position) => {
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
+                        userPos = [lat, lng];
                         loadMap(lat, lng);
                     },
                     (error) => {
                         console.error("Error geo:", error);
-                        // Fallback location (e.g., Iquitos/Pucallpa/Contamana based on user context - assuming Contamana/Jungle based on 'Charapa')
+                        // Fallback location (e.g., Contamana based on user context)
                         // Contamana coordinates approx: -7.35, -75.01
-                        loadMap(-7.3506, -75.0104);
+                        userPos = [-7.3506, -75.0104];
+                        loadMap(userPos[0], userPos[1]);
                         alert("No pudimos obtener tu ubicación. Mostrando mapa por defecto.");
                     },
                     { enableHighAccuracy: true }
                 );
             } else {
-                loadMap(-7.3506, -75.0104);
+                userPos = [-7.3506, -75.0104];
+                loadMap(userPos[0], userPos[1]);
             }
         }
 
@@ -112,19 +116,71 @@
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
-            marker = L.marker([lat, lng]).addTo(map)
+            // User Marker (Green)
+            const greenIcon = new L.Icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
+            userMarker = L.marker([lat, lng], { icon: greenIcon }).addTo(map)
                 .bindPopup('¡Estás aquí!')
                 .openPopup();
 
-            // Allow checking location updates
-            /* 
-            navigator.geolocation.watchPosition(pos => {
-                const newLat = pos.coords.latitude;
-                const newLng = pos.coords.longitude;
-                marker.setLatLng([newLat, newLng]);
-                // optional: map.panTo([newLat, newLng]);
+            // Map Click Event for Destination
+            map.on('click', function (e) {
+                setDestination(e.latlng);
             });
-            */
+        }
+
+        function setDestination(latlng) {
+            // Remove old marker/line
+            if (destMarker) map.removeLayer(destMarker);
+            if (routeLine) map.removeLayer(routeLine);
+
+            // Destination Marker (Red)
+            const redIcon = new L.Icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
+            destMarker = L.marker(latlng, { icon: redIcon }).addTo(map)
+                .bindPopup('Destino')
+                .openPopup();
+
+            // Draw Line
+            if (userPos) {
+                const latlngs = [
+                    userPos,
+                    [latlng.lat, latlng.lng]
+                ];
+                routeLine = L.polyline(latlngs, { color: 'blue', dashArray: '5, 10' }).addTo(map);
+                map.fitBounds(L.latLngBounds(latlngs).pad(0.2));
+            }
+
+            // Update Input
+            document.querySelector('input[placeholder="¿Destino?"]').value = `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`;
+
+            // Enable Button
+            const btn = document.querySelector('.role-btn.passenger');
+            btn.style.opacity = '1';
+            btn.innerText = "Confirmar Viaje";
+            btn.onclick = requestRide;
+        }
+
+        function requestRide() {
+            if (!destMarker) {
+                alert("Por favor selecciona un destino en el mapa.");
+                return;
+            }
+            alert("¡Solicitud enviada! (Simulación por ahora)\nBuscando conductores cercanos...");
         }
 
         function logout() {
