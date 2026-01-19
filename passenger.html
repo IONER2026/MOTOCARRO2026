@@ -10,17 +10,18 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
-        .map-placeholder {
+        #map {
             width: 100%;
-            height: 300px;
-            background: #2a2a2a;
+            height: 400px;
             border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #888;
             margin-bottom: 1rem;
+            z-index: 1;
+            /* Ensure it stays below headers if needed */
         }
     </style>
 </head>
@@ -35,9 +36,7 @@
             <p class="subtitle">¿A dónde vamos hoy?</p>
         </header>
 
-        <div class="map-placeholder">
-            <p>📍 Mapa cargando...</p>
-        </div>
+        <div id="map"></div>
 
         <div class="input-group" style="margin-bottom: 1rem;">
             <input type="text" placeholder="¿Destino?"
@@ -72,10 +71,61 @@
             if (user) {
                 document.getElementById('user-name').innerText = user.displayName.split(' ')[0];
                 document.getElementById('user-photo').src = user.photoURL;
+                initMap();
             } else {
                 window.location.href = 'index.html';
             }
         });
+
+        let map, marker;
+
+        function initMap() {
+            // Default to a central location (e.g., Peru/City center) or wait for geo
+            // Let's try to get location immediately
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        loadMap(lat, lng);
+                    },
+                    (error) => {
+                        console.error("Error geo:", error);
+                        // Fallback location (e.g., Iquitos/Pucallpa/Contamana based on user context - assuming Contamana/Jungle based on 'Charapa')
+                        // Contamana coordinates approx: -7.35, -75.01
+                        loadMap(-7.3506, -75.0104);
+                        alert("No pudimos obtener tu ubicación. Mostrando mapa por defecto.");
+                    },
+                    { enableHighAccuracy: true }
+                );
+            } else {
+                loadMap(-7.3506, -75.0104);
+            }
+        }
+
+        function loadMap(lat, lng) {
+            if (map) return; // Already loaded
+
+            map = L.map('map').setView([lat, lng], 15);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            marker = L.marker([lat, lng]).addTo(map)
+                .bindPopup('¡Estás aquí!')
+                .openPopup();
+
+            // Allow checking location updates
+            /* 
+            navigator.geolocation.watchPosition(pos => {
+                const newLat = pos.coords.latitude;
+                const newLng = pos.coords.longitude;
+                marker.setLatLng([newLat, newLng]);
+                // optional: map.panTo([newLat, newLng]);
+            });
+            */
+        }
 
         function logout() {
             auth.signOut().then(() => {
